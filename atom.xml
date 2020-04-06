@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>有节操的正明君</title>
+  
+  <subtitle>记录生活与点滴进步</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="https://zhengmingzhang.github.io/"/>
+  <updated>2020-04-06T03:38:57.383Z</updated>
+  <id>https://zhengmingzhang.github.io/</id>
+  
+  <author>
+    <name>正明君</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>高效能人士的七个习惯</title>
+    <link href="https://zhengmingzhang.github.io/2020/04/04/gao-xiao-neng-ren-shi-de-qi-ge-xi-guan/"/>
+    <id>https://zhengmingzhang.github.io/2020/04/04/gao-xiao-neng-ren-shi-de-qi-ge-xi-guan/</id>
+    <published>2020-04-04T04:49:49.000Z</published>
+    <updated>2020-04-06T03:38:57.383Z</updated>
+    
+    <summary type="html">
+    
+      
+      
+        
+        
+          &lt;p&gt;&lt;img src=&quot;https://img1.doubanio.com/view/thing_review/l/public/1942529.webp&quot; alt=&quot;高效能人士的七个习惯示意图&quot;&gt;&lt;/p&gt;
+&lt;h2 id=&quot;习惯一：保持积极主动&quot;&gt;&lt;a
+        
+      
+    
+    </summary>
+    
+      <category term="阅读" scheme="https://zhengmingzhang.github.io/categories/%E9%98%85%E8%AF%BB/"/>
+    
+    
+      <category term="高效能人士的七个习惯" scheme="https://zhengmingzhang.github.io/tags/%E9%AB%98%E6%95%88%E8%83%BD%E4%BA%BA%E5%A3%AB%E7%9A%84%E4%B8%83%E4%B8%AA%E4%B9%A0%E6%83%AF/"/>
+    
+      <category term="自我提升" scheme="https://zhengmingzhang.github.io/tags/%E8%87%AA%E6%88%91%E6%8F%90%E5%8D%87/"/>
+    
+  </entry>
+  
+</feed>
