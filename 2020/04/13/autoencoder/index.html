@@ -454,14 +454,14 @@ AutoEncoder简介autoencoder就是自动编码器，它的原理就不做介绍�
                 
                 <div class="info-break-policy">
                     <i class="fa fa-file-word-o fa-fw"></i>文章字数:&nbsp;&nbsp;
-                    2k
+                    2.7k
                 </div>
                 
 
                 
                 <div class="info-break-policy">
                     <i class="fa fa-clock-o fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                    8 分
+                    12 分
                 </div>
                 
                 
@@ -472,7 +472,7 @@ AutoEncoder简介autoencoder就是自动编码器，它的原理就不做介绍�
         <hr class="clearfix">
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <h2 id="项目地址"><a href="#项目地址" class="headerlink" title="项目地址"></a>项目地址</h2><p><a href="https://github.com/zhengmingzhang/AE_Face/tree/master" target="_blank" rel="noopener">AE_Face</a></p>
+                <h2 id="项目地址"><a href="#项目地址" class="headerlink" title="项目地址"></a>项目地址</h2><p><a href="https://github.com/zhengmingzhang/VAE_face" target="_blank" rel="noopener">AE_Face</a></p>
 <h2 id="AutoEncoder简介"><a href="#AutoEncoder简介" class="headerlink" title="AutoEncoder简介"></a>AutoEncoder简介</h2><p><strong>autoencoder</strong>就是自动编码器，它的原理就不做介绍了网上有很多，简单的说就是一种自学习的无监督学习算法，它的输入与输出相同。我理解就是autoencoder能够学习数据的内部特征，因此这个算法常常被用来做数据降维、特征筛选和图像去噪音。我最开始接触到自动编码器是在ABB中国研究院实习的时候，当时带我的博士让我做一个基于机器学习的齿轮箱故障检测的项目，我就是用到了自动编码器来对震动数据的频谱进行降维。我的硕士论文也用到了autoencoder，说起来和这个算法还是有些缘分的。<br>最近working from home，看了蛮多的有趣的开源项目，发现autoencoder的应用还是非常广泛的，之前很火的DeepFake的基本原理竟然也是基于autoencoder，因此我想自己尝试训练一个autoencoder对人脸进行一个生成任务。下面我们从模型结构、数据加载、模型训练、生成结果四个部分来对其进行说明。</p>
 <h2 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h2><p><img src="model.png" alt="&quot;模型结构&quot;"><br>我做这个模型是预想能够用3个数字生成人脸的，因此encoder的结构设计成先使用卷积层与池化层先将3×60×60的图片编成32×15×15的特征图。之后经过四层fc层，输出神经元个数为3。decoder的目的是想将3个神经元恢复成原来的3×60×60的图像像素，因此设计了四层的fc，输出大小就是3×60×60。模型结构设计好后，就要编写前向传播的过程，我们输入整个autoencoder中的应该是batch_size×C×W×H的图像数据，首先经过encoder变成3,之后经过decoder进行恢复，注意经过卷积和池化层的特征图需要进行拉伸后放入fc层中，这个过程使用view()即能够实现。<br>整个模型的设计的代码如下，我们将模型设计和前向传播都封装进名为AutoEncoder的类中：</p>
 <pre class="line-numbers language-python"><code class="language-python"><span class="token keyword">import</span> torch<span class="token punctuation">.</span>nn <span class="token keyword">as</span> nn
@@ -697,6 +697,131 @@ AutoEncoder简介autoencoder就是自动编码器，它的原理就不做介绍�
     face<span class="token punctuation">.</span>invtrans<span class="token punctuation">(</span>feature<span class="token punctuation">)</span>
     face<span class="token punctuation">.</span>get_rand_face<span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>展示下通过随机数产生的人脸图像<br><img src="1.jpg" alt> <img src="2.jpg" alt> <img src="3.jpg" alt> <img src="4.jpg" alt><br>emmm…..怎么说呢，随机数生成的人脸能看出是人脸的，感觉效果还行？<br>但是将原有图片先编码再解码出来的图片和与原来相差很大，而且生成的貌似都是女性的脸，这个问题还有待研究。</p>
+<h2 id="2020-4-16更新"><a href="#2020-4-16更新" class="headerlink" title="2020.4.16更新"></a>2020.4.16更新</h2><p>最近研究了下其他人写的autoencoder，并且研究了下VAE，发现自己的模型结构设计的比较差，没有想到在decoder中使用反卷积操作。因此我将原来的AE模型结构改造成VAE，在VAE中encoder有两个，一个用来计算均值，一个用来计算方差。本质是在AE的基础上，对encoder的结果加上了一个高斯噪声，使得decoder的结果对于噪声的鲁棒性更好。VAE的示意图：<br><img src="VAE.png" alt="&quot;VAE&quot;"><br>对原先的模型结构进行了修改，修改model.py</p>
+<pre class="line-numbers language-python"><code class="language-python"><span class="token keyword">class</span> <span class="token class-name">AutoEncoder</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        super<span class="token punctuation">(</span>AutoEncoder<span class="token punctuation">,</span> self<span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        latent_dim <span class="token operator">=</span> <span class="token number">128</span>
+        modules <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+        in_channels <span class="token operator">=</span> <span class="token number">3</span>
+        hidden_dims <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token number">32</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">,</span> <span class="token number">128</span><span class="token punctuation">,</span> <span class="token number">256</span><span class="token punctuation">,</span> <span class="token number">512</span><span class="token punctuation">]</span>
+        <span class="token comment" spellcheck="true"># Build Encoder</span>
+        <span class="token keyword">for</span> h_dim <span class="token keyword">in</span> hidden_dims<span class="token punctuation">:</span>
+            modules<span class="token punctuation">.</span>append<span class="token punctuation">(</span>
+                nn<span class="token punctuation">.</span>Sequential<span class="token punctuation">(</span>
+                    nn<span class="token punctuation">.</span>Conv2d<span class="token punctuation">(</span>in_channels<span class="token punctuation">,</span> out_channels<span class="token operator">=</span>h_dim<span class="token punctuation">,</span>
+                              kernel_size<span class="token operator">=</span><span class="token number">3</span><span class="token punctuation">,</span> stride<span class="token operator">=</span><span class="token number">2</span><span class="token punctuation">,</span> padding<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    nn<span class="token punctuation">.</span>BatchNorm2d<span class="token punctuation">(</span>h_dim<span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    nn<span class="token punctuation">.</span>LeakyReLU<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">)</span>
+            in_channels <span class="token operator">=</span> h_dim
+
+        self<span class="token punctuation">.</span>encoder <span class="token operator">=</span> nn<span class="token punctuation">.</span>Sequential<span class="token punctuation">(</span><span class="token operator">*</span>modules<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc_mu <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span>hidden_dims<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> <span class="token number">4</span><span class="token punctuation">,</span> latent_dim<span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc_var <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span>hidden_dims<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> <span class="token number">4</span><span class="token punctuation">,</span> latent_dim<span class="token punctuation">)</span>
+
+        <span class="token comment" spellcheck="true"># Build Decoder</span>
+        modules <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+
+        self<span class="token punctuation">.</span>decoder_input <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span>latent_dim<span class="token punctuation">,</span> hidden_dims<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">*</span> <span class="token number">4</span><span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true"># 反转hidden_dims 这样是为了能够恢复成原来的图片size</span>
+        hidden_dims<span class="token punctuation">.</span>reverse<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        <span class="token keyword">for</span> i <span class="token keyword">in</span> range<span class="token punctuation">(</span>len<span class="token punctuation">(</span>hidden_dims<span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+            modules<span class="token punctuation">.</span>append<span class="token punctuation">(</span>
+                nn<span class="token punctuation">.</span>Sequential<span class="token punctuation">(</span>
+                    nn<span class="token punctuation">.</span>ConvTranspose2d<span class="token punctuation">(</span>hidden_dims<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">,</span>
+                                       hidden_dims<span class="token punctuation">[</span>i <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                                       kernel_size<span class="token operator">=</span><span class="token number">3</span><span class="token punctuation">,</span>
+                                       stride<span class="token operator">=</span><span class="token number">2</span><span class="token punctuation">,</span>
+                                       padding<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span>
+                                       output_padding<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    nn<span class="token punctuation">.</span>BatchNorm2d<span class="token punctuation">(</span>hidden_dims<span class="token punctuation">[</span>i <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    nn<span class="token punctuation">.</span>LeakyReLU<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">)</span>
+
+        self<span class="token punctuation">.</span>decoder <span class="token operator">=</span> nn<span class="token punctuation">.</span>Sequential<span class="token punctuation">(</span><span class="token operator">*</span>modules<span class="token punctuation">)</span>
+        <span class="token comment" spellcheck="true"># 单独设置一个final_layer是为了对最后一层进行特殊处理</span>
+        self<span class="token punctuation">.</span>final_layer <span class="token operator">=</span> nn<span class="token punctuation">.</span>Sequential<span class="token punctuation">(</span>
+            nn<span class="token punctuation">.</span>ConvTranspose2d<span class="token punctuation">(</span>hidden_dims<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                               hidden_dims<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+                               kernel_size<span class="token operator">=</span><span class="token number">3</span><span class="token punctuation">,</span>
+                               stride<span class="token operator">=</span><span class="token number">2</span><span class="token punctuation">,</span>
+                               padding<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span>
+                               output_padding<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            nn<span class="token punctuation">.</span>BatchNorm2d<span class="token punctuation">(</span>hidden_dims<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            nn<span class="token punctuation">.</span>LeakyReLU<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            nn<span class="token punctuation">.</span>Conv2d<span class="token punctuation">(</span>hidden_dims<span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> out_channels<span class="token operator">=</span><span class="token number">3</span><span class="token punctuation">,</span>
+                      kernel_size<span class="token operator">=</span><span class="token number">3</span><span class="token punctuation">,</span> padding<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            nn<span class="token punctuation">.</span>Sigmoid<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">def</span> <span class="token function">encode</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> input<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """</span>
+        result <span class="token operator">=</span> self<span class="token punctuation">.</span>encoder<span class="token punctuation">(</span>input<span class="token punctuation">)</span>
+        result <span class="token operator">=</span> torch<span class="token punctuation">.</span>flatten<span class="token punctuation">(</span>result<span class="token punctuation">,</span> start_dim<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+
+        <span class="token comment" spellcheck="true"># Split the result into mu and var components</span>
+        <span class="token comment" spellcheck="true"># of the latent Gaussian distribution</span>
+        mu <span class="token operator">=</span> self<span class="token punctuation">.</span>fc_mu<span class="token punctuation">(</span>result<span class="token punctuation">)</span>
+        log_var <span class="token operator">=</span> self<span class="token punctuation">.</span>fc_var<span class="token punctuation">(</span>result<span class="token punctuation">)</span>
+
+        <span class="token keyword">return</span> <span class="token punctuation">[</span>mu<span class="token punctuation">,</span> log_var<span class="token punctuation">]</span>
+
+    <span class="token keyword">def</span> <span class="token function">decode</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> z<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        result <span class="token operator">=</span> self<span class="token punctuation">.</span>decoder_input<span class="token punctuation">(</span>z<span class="token punctuation">)</span>
+        result <span class="token operator">=</span> result<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">512</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+        result <span class="token operator">=</span> self<span class="token punctuation">.</span>decoder<span class="token punctuation">(</span>result<span class="token punctuation">)</span>
+        result <span class="token operator">=</span> self<span class="token punctuation">.</span>final_layer<span class="token punctuation">(</span>result<span class="token punctuation">)</span>
+        <span class="token keyword">return</span> result
+
+    <span class="token keyword">def</span> <span class="token function">reparameterize</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> mu<span class="token punctuation">,</span> logvar<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token triple-quoted-string string">"""
+        Will a single z be enough ti compute the expectation
+        for the loss??
+        :param mu: (Tensor) Mean of the latent Gaussian
+        :param logvar: (Tensor) Standard deviation of the latent Gaussian
+        :return:
+        """</span>
+        <span class="token keyword">if</span> self<span class="token punctuation">.</span>training<span class="token punctuation">:</span>
+            <span class="token comment" spellcheck="true"># multiply log variance with 0.5, then in-place exponent</span>
+            <span class="token comment" spellcheck="true"># yielding the standard deviation</span>
+
+            sample_z <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+            <span class="token keyword">for</span> _ <span class="token keyword">in</span> range<span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+                std <span class="token operator">=</span> logvar<span class="token punctuation">.</span>mul<span class="token punctuation">(</span><span class="token number">0.5</span><span class="token punctuation">)</span><span class="token punctuation">.</span>exp_<span class="token punctuation">(</span><span class="token punctuation">)</span>  <span class="token comment" spellcheck="true"># type: Variable</span>
+                eps <span class="token operator">=</span> Variable<span class="token punctuation">(</span>std<span class="token punctuation">.</span>data<span class="token punctuation">.</span>new<span class="token punctuation">(</span>std<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>normal_<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                sample_z<span class="token punctuation">.</span>append<span class="token punctuation">(</span>eps<span class="token punctuation">.</span>mul<span class="token punctuation">(</span>std<span class="token punctuation">)</span><span class="token punctuation">.</span>add_<span class="token punctuation">(</span>mu<span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+            <span class="token keyword">return</span> sample_z
+
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            <span class="token keyword">return</span> mu
+
+    <span class="token keyword">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> input<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        mu<span class="token punctuation">,</span> log_var <span class="token operator">=</span> self<span class="token punctuation">.</span>encode<span class="token punctuation">(</span>input<span class="token punctuation">)</span>
+        z <span class="token operator">=</span> self<span class="token punctuation">.</span>reparameterize<span class="token punctuation">(</span>mu<span class="token punctuation">,</span> log_var<span class="token punctuation">)</span>
+        <span class="token keyword">if</span> self<span class="token punctuation">.</span>training<span class="token punctuation">:</span>
+            <span class="token keyword">return</span> <span class="token punctuation">[</span>self<span class="token punctuation">.</span>decode<span class="token punctuation">(</span>z<span class="token punctuation">)</span> <span class="token keyword">for</span> z <span class="token keyword">in</span> z<span class="token punctuation">]</span><span class="token punctuation">,</span> mu<span class="token punctuation">,</span> log_var
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            <span class="token keyword">return</span> self<span class="token punctuation">.</span>decode<span class="token punctuation">(</span>z<span class="token punctuation">)</span><span class="token punctuation">,</span> mu<span class="token punctuation">,</span> log_var
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>之后需要更改的一个非常重要的地方就是loss，之前在AE中，我是使用的MSE Loss,在VAE中设计了另外一种loss。VAE的LOSS由两部分组成。<br>1.<strong>BCE_LOSS</strong>：二分类交叉熵损失，用来衡量原图与生成的图片之间的像素误差<br>2.<strong>KLD_LOSS</strong>：KL散度，用来衡量潜在变量的分布与单位高斯分布之间的差异<br>VAE_LOSS = BCE_LOSS + KLD_LOSS</p>
+<pre class="line-numbers language-python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">loss_function</span><span class="token punctuation">(</span>recon_x<span class="token punctuation">,</span> x<span class="token punctuation">,</span> mu<span class="token punctuation">,</span> logvar<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment" spellcheck="true"># how well do input x and output recon_x agree?</span>
+    BCE <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">for</span> recon_x_one <span class="token keyword">in</span> recon_x<span class="token punctuation">:</span>
+        BCE <span class="token operator">+=</span> F<span class="token punctuation">.</span>binary_cross_entropy<span class="token punctuation">(</span>recon_x_one<span class="token punctuation">,</span> x<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span> <span class="token operator">*</span> <span class="token number">64</span> <span class="token operator">*</span> <span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    BCE <span class="token operator">/=</span> len<span class="token punctuation">(</span>recon_x<span class="token punctuation">)</span>
+    KLD <span class="token operator">=</span> <span class="token operator">-</span><span class="token number">0.5</span> <span class="token operator">*</span> torch<span class="token punctuation">.</span>sum<span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">+</span> logvar <span class="token operator">-</span> mu<span class="token punctuation">.</span>pow<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">-</span> logvar<span class="token punctuation">.</span>exp<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    KLD <span class="token operator">/=</span> BATCH_SIZE <span class="token operator">*</span> <span class="token number">3</span> <span class="token operator">*</span> <span class="token number">64</span> <span class="token operator">*</span> <span class="token number">64</span>
+
+    <span class="token keyword">return</span> BCE <span class="token operator">+</span> KLD
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>##查看结果</p>
 
             </div>
             <hr />
@@ -1287,7 +1412,7 @@ AutoEncoder简介autoencoder就是自动编码器，它的原理就不做介绍�
 
             
             &nbsp;<i class="fa fa-area-chart"></i>&nbsp;站点总字数:&nbsp;
-            <span class="white-color">2.3k</span>
+            <span class="white-color">3.1k</span>
             
 
             <br>
